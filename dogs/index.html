@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>畫線保護狗遊戲</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script src="script.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+
+            // 初始化狗和蜜蜂的位置
+            let dogPosition = { x: 50, y: 50 };
+            let bees = []; // 存儲所有蜜蜂的陣列
+            let linePosition = null;
+            let score = 0; // 分數
+
+            // 增加框框的大小
+            const BOX_SIZE = 100;
+
+            // 創建30個蜜蜂
+            for (let i = 0; i < 30; i++) {
+                bees.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    velocityX: randomSpeed(),
+                    velocityY: randomSpeed()
+                });
+            }
+
+            function randomSpeed() {
+                return Math.random() * 4 - 2;
+            }
+
+            function moveBeesTowardsDog() {
+                for (let i = 0; i < bees.length; i++) {
+                    const bee = bees[i];
+                    const dx = dogPosition.x - bee.x;
+                    const dy = dogPosition.y - bee.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance !== 0) {
+                        bee.velocityX = (dx / distance) * 2;
+                        bee.velocityY = (dy / distance) * 2;
+                    }
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                moveBeesTowardsDog();
+
+                // 畫蜜蜂
+                for (let i = 0; i < bees.length; i++) {
+                    const bee = bees[i];
+                    ctx.fillStyle = "yellow";
+                    ctx.beginPath();
+                    ctx.arc(bee.x, bee.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 畫狗
+                ctx.fillStyle = "brown";
+                ctx.fillRect(dogPosition.x, dogPosition.y, BOX_SIZE, BOX_SIZE);
+
+                // 畫線
+                if (linePosition !== null) {
+                    ctx.beginPath();
+                    ctx.moveTo(dogPosition.x + BOX_SIZE / 2, dogPosition.y + BOX_SIZE / 2);
+                    ctx.lineTo(linePosition.x, linePosition.y);
+                    ctx.strokeStyle = "blue";
+                    ctx.lineWidth = 5;
+                    ctx.stroke();
+                }
+
+                // 檢查線是否碰到蜜蜂並處理
+                for (let i = 0; i < bees.length; i++) {
+                    const bee = bees[i];
+                    const distance = Math.sqrt(Math.pow(bee.x - linePosition.x, 2) + Math.pow(bee.y - linePosition.y, 2));
+                    if (distance <= 5) {
+                        // 從陣列中刪除蜜蜂
+                        bees.splice(i, 1);
+
+                        // 增加分數
+                        score += 1;
+
+                        // 隨機重生在右上角或左上角
+                        if (Math.random() < 0.5) {
+                            bee.x = canvas.width;
+                        } else {
+                            bee.x = 0;
+                        }
+                        bee.y = 0;
+
+                        // 重新設定速度
+                        bee.velocityX = randomSpeed();
+                        bee.velocityY = randomSpeed();
+                    }
+                }
+
+                // 顯示分數
+                ctx.fillStyle = "white";
+                ctx.font = "bold 20px Arial";
+                ctx.fillText("Score: " + score, canvas.width - 100, 30);
+            }
+
+            let isDrawing = false;
+            canvas.addEventListener("mousedown", function(event) {
+                isDrawing = true;
+            });
+            canvas.addEventListener("mousemove", function(event) {
+                if (isDrawing) {
+                    linePosition = { x: event.clientX - canvas.offsetLeft, y: event.clientY - canvas.offsetTop };
+                }
+            });
+            canvas.addEventListener("mouseup", function(event) {
+                isDrawing = false;
+                linePosition = null;
+            });
+
+            function gameLoop() {
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            gameLoop();
+        });
+    </script>
+</body>
+</html>
